@@ -1,21 +1,34 @@
-name: Windows - RustDesk
+name: Linux - Full Access
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    name: Start Building...
-    runs-on: windows-latest
+    name: Start Linux Access...
+    runs-on: ubuntu-latest
+    timeout-minutes: 9999
     
     steps:
-      - name: Downloading & Installing Essentials
+      - name: Update & Install Dependencies
         run: |
-          Invoke-WebRequest -Uri "https://www.dropbox.com/scl/fi/qdyd4p9t6xoabl95n5o3g/Downloads.bat?rlkey=snr74vv1vr8k5suujugvrhjtm&dl=1" -OutFile "Downloads.bat"
-          cmd /c Downloads.bat
+          sudo apt update && sudo apt upgrade -y
+          sudo apt install -y curl wget git nano tmux
+          
+      - name: Download & Install RustDesk (Remote Access)
+        run: |
+          wget https://github.com/rustdesk/rustdesk/releases/latest/download/rustdesk-1.2.0-x86_64.deb
+          sudo dpkg -i rustdesk-1.2.0-x86_64.deb || sudo apt-get install -f -y
+          nohup rustdesk &
 
-      - name: Log In To AnyDesk
-        run: cmd /c show.bat
+      - name: Display RustDesk Info
+        run: rustdesk --help || echo "RustDesk installed. Open the client and enter the machine ID to connect."
 
-      - name: Time Counter
-        run: python time.py
+      - name: Setup Time Counter
+        run: |
+          echo "while true; do date; sleep 60; done" > time.sh
+          chmod +x time.sh
+          nohup bash time.sh &
+
+      - name: Keep Machine Alive
+        run: tmux new-session -d 'bash'
